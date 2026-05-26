@@ -23,6 +23,15 @@ Without direnv, ensure `java -version` reports 17 before running Gradle.
 ./gradlew bootJar                            # executable jar
 ```
 
+Local infrastructure uses **Podman Compose** (not Docker Compose):
+
+```bash
+cp .env.example .env
+direnv allow                                   # loads .env via .envrc
+podman compose up -d mysql                   # MySQL on localhost:3306
+./gradlew bootRun                              # reads SPRING_DATASOURCE_* from env
+```
+
 No dedicated lint/format/typecheck tasks — `./gradlew build` is the verification gate.
 
 Gradle wrapper: **9.4.1**. Kotlin **2.2.21**, Spring Boot **4.0.6**.
@@ -50,21 +59,17 @@ Dependencies declare intent; almost none is implemented yet:
 
 ## Database (critical for tests and runtime)
 
-`application.properties` only sets `spring.application.name=starj`. **No JDBC driver or URL is configured**, yet Flyway/MyBatis autoconfiguration expects a datasource.
+**Runtime (local):** Datasource is configured via environment variables loaded from `.env` by direnv (`.envrc` → `dotenv`):
 
-`./gradlew test` currently fails with:
+| Variable | Purpose |
+|----------|---------|
+| `SPRING_DATASOURCE_URL` | JDBC URL (e.g. `jdbc:mysql://localhost:3306/starj`) |
+| `SPRING_DATASOURCE_USERNAME` | DB user (shared with compose `MYSQL_USER`) |
+| `SPRING_DATASOURCE_PASSWORD` | DB password (shared with compose `MYSQL_PASSWORD`) |
 
-```
-Failed to determine a suitable driver class
-```
+`runtimeOnly("com.mysql:mysql-connector-j")` is on the classpath. `application.properties` only sets `spring.application.name=starj`; datasource values come from env.
 
-Before `@SpringBootTest` can pass, add e.g. H2 for tests:
-
-- `testImplementation("com.h2database:h2")` + `src/test/resources/application.properties`, or
-- `@SpringBootTest` with `@AutoConfigureTestDatabase` / `@MockBean DataSource`, or
-- exclude JDBC/Flyway autoconfig in tests until DB work begins
-
-Pick one approach and document it here when implemented.
+**Tests:** H2 in-memory via `src/test/resources/application.properties` (`spring.flyway.enabled=false`).
 
 ## Conventions
 

@@ -28,6 +28,10 @@ dependencies {
     implementation("org.mybatis.spring.boot:mybatis-spring-boot-starter:4.0.1")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.2")
     implementation("tools.jackson.module:jackson-module-kotlin")
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    implementation("org.springframework.session:spring-session-data-redis")
+    implementation(platform("software.amazon.awssdk:bom:2.31.70"))
+    implementation("software.amazon.awssdk:s3")
     runtimeOnly("com.mysql:mysql-connector-j")
     runtimeOnly("org.flywaydb:flyway-mysql")
     testImplementation("org.springframework.boot:spring-boot-starter-batch-test")
@@ -36,7 +40,11 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("org.mybatis.spring.boot:mybatis-spring-boot-starter-test:4.0.1")
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.20.6"))
     testImplementation("com.h2database:h2")
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("org.testcontainers:mysql")
+    testImplementation("org.testcontainers:minio")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
@@ -47,5 +55,12 @@ kotlin {
 }
 
 tasks.withType<Test> {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        if (gradle.startParameter.taskRequests.none { request -> request.args.any { it == "--tests" } }) {
+            excludeTags("integration")
+        }
+    }
+    environment("SPRING_DATASOURCE_URL", "")
+    environment("SPRING_DATASOURCE_USERNAME", "")
+    environment("SPRING_DATASOURCE_PASSWORD", "")
 }

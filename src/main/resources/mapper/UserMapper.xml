@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.turtton.starj.storage.infrastructure.mybatis.UserMapper">
+
+    <resultMap id="UserEntityResultMap" type="net.turtton.starj.storage.infrastructure.mybatis.UserEntity">
+        <id column="id" property="id" />
+        <result column="username" property="username" />
+        <result column="password_hash" property="passwordHash" />
+        <result column="enabled" property="enabled" />
+        <result column="created_at" property="createdAt" />
+    </resultMap>
+
+    <select id="findByUsername" resultMap="UserEntityResultMap">
+        SELECT id, username, password_hash, enabled, created_at
+        FROM users
+        WHERE username = #{username}
+    </select>
+
+    <select id="findById" resultMap="UserEntityResultMap">
+        SELECT id, username, password_hash, enabled, created_at
+        FROM users
+        WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="net.turtton.starj.storage.infrastructure.mybatis.UserEntity" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO users (username, password_hash, enabled, created_at)
+        VALUES (#{username}, #{passwordHash}, #{enabled}, #{createdAt})
+    </insert>
+
+</mapper>

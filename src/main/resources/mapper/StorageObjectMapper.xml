@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.turtton.starj.storage.infrastructure.mybatis.StorageObjectMapper">
+
+    <resultMap id="StorageObjectEntityResultMap" type="net.turtton.starj.storage.infrastructure.mybatis.StorageObjectEntity">
+        <id column="id" property="id" />
+        <result column="owner_id" property="ownerId" />
+        <result column="filename" property="filename" />
+        <result column="content_type" property="contentType" />
+        <result column="size" property="size" />
+        <result column="object_key" property="objectKey" />
+        <result column="created_at" property="createdAt" />
+    </resultMap>
+
+    <select id="findById" resultMap="StorageObjectEntityResultMap">
+        SELECT id, owner_id, filename, content_type, size, object_key, created_at
+        FROM storage_objects
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByIdAndOwnerId" resultMap="StorageObjectEntityResultMap">
+        SELECT id, owner_id, filename, content_type, size, object_key, created_at
+        FROM storage_objects
+        WHERE id = #{id}
+          AND owner_id = #{ownerId}
+    </select>
+
+    <insert id="insert" parameterType="net.turtton.starj.storage.infrastructure.mybatis.StorageObjectEntity">
+        INSERT INTO storage_objects (id, owner_id, filename, content_type, size, object_key, created_at)
+        VALUES (#{id}, #{ownerId}, #{filename}, #{contentType}, #{size}, #{objectKey}, #{createdAt})
+    </insert>
+
+    <delete id="deleteByIdAndOwnerId">
+        DELETE FROM storage_objects
+        WHERE id = #{id}
+          AND owner_id = #{ownerId}
+    </delete>
+
+    <select id="findByOwnerIdWithCursor" resultMap="StorageObjectEntityResultMap">
+        SELECT id, owner_id, filename, content_type, size, object_key, created_at
+        FROM storage_objects
+        WHERE owner_id = #{ownerId}
+          AND (#{cursor} IS NULL OR id &lt; #{cursor})
+        ORDER BY created_at DESC
+        LIMIT #{size}
+    </select>
+
+</mapper>

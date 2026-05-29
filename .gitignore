@@ -49,4 +49,6 @@ frontend/.vite/
 frontend/*.log
 frontend/test-results/
 frontend/__screenshots__/
+frontend/playwright-report/
+frontend/.playwright/
 .direnv/

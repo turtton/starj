@@ -30,8 +30,8 @@ interface UserMapper {
     // language=mysql
     @Insert(
         """
-        INSERT INTO users (username, password_hash, enabled, created_at)
-        VALUES (#{username}, #{passwordHash}, #{enabled}, #{createdAt})
+        INSERT INTO users (username, password_hash, enabled)
+        VALUES (#{username}, #{passwordHash}, #{enabled})
         """,
     )
     @Options(useGeneratedKeys = true, keyProperty = "id")

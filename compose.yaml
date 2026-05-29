@@ -54,6 +54,22 @@ services:
       retries: 5
       start_period: 10s
 
+  # One-shot: create the application bucket the app expects (it does not self-create).
+  # Started on demand (e.g. `podman compose run --rm minio-init`) or as part of a full
+  # `podman compose up`. Idempotent.
+  minio-init:
+    image: docker.io/minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        until mc alias set local http://minio:9000
+        "${MINIO_ROOT_USER:-minioadmin}" "${MINIO_ROOT_PASSWORD:-minioadmin}";
+        do echo 'waiting for minio...'; sleep 1; done;
+        mc mb --ignore-existing "local/${MINIO_BUCKET:-starj}";
+        echo "bucket ready: ${MINIO_BUCKET:-starj}"
+
 volumes:
   starj-mysql-data:
   starj-redis-data:

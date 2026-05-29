@@ -63,6 +63,16 @@ node_modules/.bin/vitest run                    # headless chromium; `pnpm test`
 
 These browser tests need Chromium and are not wired into `./gradlew build`; run them on demand.
 
+**End-to-end (real backend)** runs the full stack: `podman compose` brings up MySQL/Redis/MinIO, the packaged jar serves the SPA, and **Playwright** drives Chromium through it (register → login → upload → download → delete → logout, plus cursor pagination). One command (run inside the dev shell):
+
+```bash
+./scripts/e2e.sh            # infra up -> MinIO bucket -> bootJar -> playwright -> teardown
+KEEP_INFRA=1 ./scripts/e2e.sh   # keep containers running between runs
+./scripts/e2e.sh --headed       # extra args forwarded to `playwright test`
+```
+
+The script loads `.env`, waits for the containers, creates the MinIO bucket via the one-shot `minio-init` compose service (the app does **not** self-create it), then Playwright (`frontend/playwright.config.ts`) starts `java -jar` and waits on `/health`. Specs live in `frontend/e2e/`. Tests use fresh random usernames, so the persistent MySQL volume is safe to reuse. This is a local/manual gate — it is not part of CI (the backend already has Testcontainers integration coverage). To point Playwright at an already-running app, use `E2E_NO_SERVER=1 E2E_BASE_URL=... pnpm test:e2e`.
+
 Auth is session/cookie based with CSRF: the app primes the `XSRF-TOKEN` cookie via `GET /api/auth/csrf`, then echoes it in the `X-XSRF-TOKEN` header on mutating requests (the backend uses the plain `CsrfTokenRequestAttributeHandler` so the raw cookie value is accepted).
 
 **Production bundling:** `./gradlew bootJar` (or `bootRun`) runs `buildFrontend` (`vp build`) and copies `frontend/dist` into the jar's `static/`, so Spring serves the SPA at `/`. Client deep links (`/login`, `/register`) are forwarded to `index.html` by `SpaForwardingController`. Skip the frontend build with `-PskipFrontend` (used for backend-only CI without `vp`):

@@ -101,6 +101,7 @@ export function Files() {
               <div class="flex shrink-0 items-center gap-2 text-sm">
                 <a
                   href={downloadUrl(item.id)}
+                  download={item.filename}
                   class="rounded-md border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100"
                 >
                   ダウンロード

@@ -4,6 +4,7 @@ import net.turtton.starj.security.UserPrincipal
 import net.turtton.starj.storage.application.CursorPagination
 import net.turtton.starj.storage.application.StorageService
 import net.turtton.starj.storage.domain.OwnerId
+import net.turtton.starj.storage.domain.StorageCursor
 import net.turtton.starj.storage.domain.StorageObjectId
 import net.turtton.starj.storage.port.StorageObjectRecord
 import org.springframework.core.io.InputStreamResource
@@ -112,7 +113,8 @@ class StorageController(
         val records = storageService.list(ownerId, decodedCursor, validatedSize)
 
         val nextCursor = if (records.size == validatedSize) {
-            CursorPagination.encode(records.last().id)
+            val last = records.last()
+            CursorPagination.encode(StorageCursor(last.createdAt, last.id))
         } else {
             null
         }

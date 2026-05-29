@@ -49,13 +49,7 @@ test('register, upload, download, delete and logout against the real backend', a
   await expect(page.getByRole('heading', { name: 'ログイン' })).toBeVisible()
 })
 
-// KNOWN BACKEND BUG (surfaced by this E2E): the list query orders by
-// `created_at DESC` but the cursor filters by `id < cursor`, and storage ids are
-// random UUIDv4 — so the second page compares UUIDs lexicographically against a
-// created_at ordering, yielding overlaps/duplicates (a fresh user that uploaded
-// 21 files paginated to 35 rows). Re-enable once cursor pagination uses a cursor
-// consistent with the ordering column (e.g. a composite (created_at, id) cursor).
-test.fixme('paginates the file list with cursor pages', async ({ page }) => {
+test('paginates the file list with cursor pages', async ({ page }) => {
   const username = uniqueUsername('e2epage')
   await registerAndLogin(page, username)
 

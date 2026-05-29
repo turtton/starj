@@ -55,14 +55,19 @@ interface StorageObjectMapper {
         SELECT id, owner_id, filename, content_type, size, object_key, created_at
         FROM storage_objects
         WHERE owner_id = #{ownerId}
-          AND (#{cursor} IS NULL OR id < #{cursor})
-        ORDER BY created_at DESC
+          AND (
+            #{cursorId} IS NULL
+            OR created_at < #{cursorCreatedAt}
+            OR (created_at = #{cursorCreatedAt} AND id < #{cursorId})
+          )
+        ORDER BY created_at DESC, id DESC
         LIMIT #{size}
         """,
     )
     fun findByOwnerIdWithCursor(
         @Param("ownerId") ownerId: Long,
-        @Param("cursor") cursor: String?,
+        @Param("cursorCreatedAt") cursorCreatedAt: LocalDateTime?,
+        @Param("cursorId") cursorId: String?,
         @Param("size") size: Int,
     ): List<StorageObjectEntity>
 }

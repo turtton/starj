@@ -2,6 +2,7 @@ package net.turtton.starj.storage
 
 import net.turtton.starj.IntegrationTestBase
 import net.turtton.starj.storage.domain.OwnerId
+import net.turtton.starj.storage.domain.StorageCursor
 import net.turtton.starj.storage.domain.StorageObjectId
 import net.turtton.starj.storage.infrastructure.mybatis.StorageObjectEntity
 import net.turtton.starj.storage.infrastructure.mybatis.StorageObjectMapper
@@ -262,8 +263,11 @@ class StorageEndToEndTest(
         override fun findById(id: StorageObjectId, ownerId: OwnerId): StorageObjectRecord? =
             mapper.findByIdAndOwnerId(id.value, ownerId.value)?.toRecord()
 
-        override fun findByOwner(ownerId: OwnerId, cursor: String?, size: Int): List<StorageObjectRecord> =
-            mapper.findByOwnerIdWithCursor(ownerId.value, cursor, size).map { it.toRecord() }
+        override fun findByOwner(ownerId: OwnerId, cursor: StorageCursor?, size: Int): List<StorageObjectRecord> {
+            val cursorCreatedAt = cursor?.let { it.createdAt.atOffset(ZoneOffset.UTC).toLocalDateTime() }
+            return mapper.findByOwnerIdWithCursor(ownerId.value, cursorCreatedAt, cursor?.id, size)
+                .map { it.toRecord() }
+        }
 
         override fun save(record: StorageObjectRecord) {
             mapper.insert(record.toEntity())

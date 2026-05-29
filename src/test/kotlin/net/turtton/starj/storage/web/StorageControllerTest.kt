@@ -4,6 +4,7 @@ import net.turtton.starj.security.UserPrincipal
 import net.turtton.starj.storage.application.CursorPagination
 import net.turtton.starj.storage.application.StorageService
 import net.turtton.starj.storage.domain.OwnerId
+import net.turtton.starj.storage.domain.StorageCursor
 import net.turtton.starj.storage.domain.StorageObjectId
 import net.turtton.starj.storage.port.StorageObjectRecord
 import org.junit.jupiter.api.Test
@@ -238,7 +239,9 @@ class StorageControllerTest(
             jsonPath("$.items.length()") { value(2) }
             jsonPath("$.items[0].id") { value("abc-123") }
             jsonPath("$.items[1].id") { value("def-456") }
-            jsonPath("$.nextCursor") { value(CursorPagination.encode("def-456")) }
+            jsonPath("$.nextCursor") {
+                value(CursorPagination.encode(StorageCursor(sampleRecord.createdAt, "def-456")))
+            }
         }
     }
 
@@ -260,10 +263,11 @@ class StorageControllerTest(
 
     @Test
     fun `list with valid cursor decodes and passes to service`() {
-        val cursor = CursorPagination.encode("abc-123")
+        val cursorValue = StorageCursor(sampleRecord.createdAt, "abc-123")
+        val cursor = CursorPagination.encode(cursorValue)
         val records = listOf(sampleRecord.copy(id = "def-456"))
 
-        `when`(storageService.list(OwnerId(1L), "abc-123", 20))
+        `when`(storageService.list(OwnerId(1L), cursorValue, 20))
             .thenReturn(records)
 
         mockMvc.get("/api/storage") {

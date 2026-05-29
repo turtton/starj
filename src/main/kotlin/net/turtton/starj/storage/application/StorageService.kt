@@ -1,6 +1,7 @@
 package net.turtton.starj.storage.application
 
 import net.turtton.starj.storage.domain.OwnerId
+import net.turtton.starj.storage.domain.StorageCursor
 import net.turtton.starj.storage.domain.StorageObjectId
 import net.turtton.starj.storage.port.ObjectStorageClient
 import net.turtton.starj.storage.port.StorageObjectRecord
@@ -66,7 +67,7 @@ class StorageService(
     fun detail(id: StorageObjectId, ownerId: OwnerId): StorageObjectRecord? =
         storageObjectRepository.findById(id, ownerId)
 
-    fun list(ownerId: OwnerId, cursor: String?, size: Int): List<StorageObjectRecord> {
+    fun list(ownerId: OwnerId, cursor: StorageCursor?, size: Int): List<StorageObjectRecord> {
         return storageObjectRepository.findByOwner(ownerId, cursor, size)
     }
 

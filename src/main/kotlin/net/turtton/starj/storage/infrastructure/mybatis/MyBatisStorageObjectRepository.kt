@@ -1,6 +1,7 @@
 package net.turtton.starj.storage.infrastructure.mybatis
 
 import net.turtton.starj.storage.domain.OwnerId
+import net.turtton.starj.storage.domain.StorageCursor
 import net.turtton.starj.storage.domain.StorageObjectId
 import net.turtton.starj.storage.port.StorageObjectRecord
 import net.turtton.starj.storage.port.StorageObjectRepository
@@ -18,8 +19,10 @@ class MyBatisStorageObjectRepository(
         return mapper.findByIdAndOwnerId(id.value, ownerId.value)?.toRecord()
     }
 
-    override fun findByOwner(ownerId: OwnerId, cursor: String?, size: Int): List<StorageObjectRecord> {
-        return mapper.findByOwnerIdWithCursor(ownerId.value, cursor, size).map { it.toRecord() }
+    override fun findByOwner(ownerId: OwnerId, cursor: StorageCursor?, size: Int): List<StorageObjectRecord> {
+        val cursorCreatedAt = cursor?.let { LocalDateTime.ofInstant(it.createdAt, ZoneOffset.UTC) }
+        return mapper.findByOwnerIdWithCursor(ownerId.value, cursorCreatedAt, cursor?.id, size)
+            .map { it.toRecord() }
     }
 
     override fun save(record: StorageObjectRecord) {

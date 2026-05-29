@@ -1,15 +1,23 @@
 package net.turtton.starj.storage.application
 
+import net.turtton.starj.storage.domain.StorageCursor
 import net.turtton.starj.storage.web.PaginationConstants
+import java.time.Instant
 import java.util.Base64
 
 object CursorPagination {
-    fun encode(lastId: String): String {
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(lastId.toByteArray())
+    fun encode(cursor: StorageCursor): String {
+        val raw = "${cursor.createdAt.toEpochMilli()}:${cursor.id}"
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(raw.toByteArray())
     }
 
-    fun decode(cursor: String): String {
-        return String(Base64.getUrlDecoder().decode(cursor))
+    fun decode(value: String): StorageCursor {
+        val raw = String(Base64.getUrlDecoder().decode(value))
+        val separator = raw.indexOf(':')
+        require(separator > 0 && separator < raw.length - 1) { "Invalid cursor" }
+        val epochMilli = raw.substring(0, separator).toLongOrNull()
+            ?: throw IllegalArgumentException("Invalid cursor")
+        return StorageCursor(Instant.ofEpochMilli(epochMilli), raw.substring(separator + 1))
     }
 
     fun validateSize(size: Int?): Int {

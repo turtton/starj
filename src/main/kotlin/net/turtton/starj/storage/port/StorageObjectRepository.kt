@@ -1,12 +1,13 @@
 package net.turtton.starj.storage.port
 
 import net.turtton.starj.storage.domain.OwnerId
+import net.turtton.starj.storage.domain.StorageCursor
 import net.turtton.starj.storage.domain.StorageObjectId
 import java.time.Instant
 
 interface StorageObjectRepository {
     fun findById(id: StorageObjectId, ownerId: OwnerId): StorageObjectRecord?
-    fun findByOwner(ownerId: OwnerId, cursor: String?, size: Int): List<StorageObjectRecord>
+    fun findByOwner(ownerId: OwnerId, cursor: StorageCursor?, size: Int): List<StorageObjectRecord>
     fun save(record: StorageObjectRecord)
     fun delete(id: StorageObjectId, ownerId: OwnerId)
 }

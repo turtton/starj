@@ -1,15 +1,17 @@
 package net.turtton.starj.storage.application
 
+import net.turtton.starj.storage.domain.StorageCursor
 import net.turtton.starj.storage.web.PaginationConstants
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
+import java.time.Instant
 
 class CursorPaginationTest {
 
     @Test
     fun encodeThenDecodeReturnsOriginal() {
-        val original = "last-id-123"
+        val original = StorageCursor(Instant.parse("2026-01-01T00:00:00Z"), "last-id-123")
 
         val encoded = CursorPagination.encode(original)
         val decoded = CursorPagination.decode(encoded)
@@ -39,10 +41,10 @@ class CursorPaginationTest {
 
     @Test
     fun cursorIsOpaque() {
-        val lastId = "secret-id"
+        val cursor = StorageCursor(Instant.parse("2026-01-01T00:00:00Z"), "secret-id")
 
-        val encoded = CursorPagination.encode(lastId)
+        val encoded = CursorPagination.encode(cursor)
 
-        assertNotEquals(lastId, encoded)
+        assertNotEquals(cursor.id, encoded)
     }
 }

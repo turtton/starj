@@ -33,8 +33,11 @@ export function Login() {
       <h1 class="mb-6 text-2xl font-bold">ログイン</h1>
       <form onSubmit={onSubmit} class="space-y-4">
         <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">ユーザー名</label>
+          <label for="login-username" class="mb-1 block text-sm font-medium text-slate-700">
+            ユーザー名
+          </label>
           <input
+            id="login-username"
             type="text"
             value={username}
             onInput={(e) => setUsername((e.target as HTMLInputElement).value)}
@@ -44,8 +47,11 @@ export function Login() {
           />
         </div>
         <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">パスワード</label>
+          <label for="login-password" class="mb-1 block text-sm font-medium text-slate-700">
+            パスワード
+          </label>
           <input
+            id="login-password"
             type="password"
             value={password}
             onInput={(e) => setPassword((e.target as HTMLInputElement).value)}

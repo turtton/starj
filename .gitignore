@@ -47,4 +47,6 @@ frontend/node_modules/
 frontend/dist/
 frontend/.vite/
 frontend/*.log
+frontend/test-results/
+frontend/__screenshots__/
 .direnv/

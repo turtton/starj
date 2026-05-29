@@ -33,8 +33,11 @@ export function Register() {
       <h1 class="mb-6 text-2xl font-bold">新規登録</h1>
       <form onSubmit={onSubmit} class="space-y-4">
         <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">ユーザー名</label>
+          <label for="register-username" class="mb-1 block text-sm font-medium text-slate-700">
+            ユーザー名
+          </label>
           <input
+            id="register-username"
             type="text"
             value={username}
             onInput={(e) => setUsername((e.target as HTMLInputElement).value)}
@@ -44,8 +47,11 @@ export function Register() {
           />
         </div>
         <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">パスワード</label>
+          <label for="register-password" class="mb-1 block text-sm font-medium text-slate-700">
+            パスワード
+          </label>
           <input
+            id="register-password"
             type="password"
             value={password}
             onInput={(e) => setPassword((e.target as HTMLInputElement).value)}

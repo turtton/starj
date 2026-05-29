@@ -48,9 +48,20 @@ vp install                                    # install JS deps (pnpm under the 
 vp dev                                        # dev server on :5173, proxies /api -> :8080
 vp check                                      # format, lint, type-check
 vp build                                      # production build -> frontend/dist
+pnpm test                                     # component tests (vitest run) — see below
 ```
 
 `vp` comes from the Nix dev shell (no global install). On first use, run `vp env off` once so Vite+ reuses the Nix-managed Node/pnpm instead of downloading its own runtime.
+
+**Component tests** run in a real browser via **vitest-browser-preact** (Vitest 4 browser mode + Playwright/Chromium). Test files live next to the code as `*.test.tsx`. Because `@vitest/browser` must match the real `vitest` version, the test stack uses upstream `vitest@4.1` (only the `vite` → `@voidzero-dev/vite-plus-core` override is kept in `pnpm-workspace.yaml`; the `vitest` override is intentionally dropped). Run them with the local binary so Vite+'s bundled runner is bypassed:
+
+```bash
+cd frontend
+node_modules/.bin/playwright install chromium  # one-time: fetch the browser
+node_modules/.bin/vitest run                    # headless chromium; `pnpm test` is an alias
+```
+
+These browser tests need Chromium and are not wired into `./gradlew build`; run them on demand.
 
 Auth is session/cookie based with CSRF: the app primes the `XSRF-TOKEN` cookie via `GET /api/auth/csrf`, then echoes it in the `X-XSRF-TOKEN` header on mutating requests (the backend uses the plain `CsrfTokenRequestAttributeHandler` so the raw cookie value is accepted).
 

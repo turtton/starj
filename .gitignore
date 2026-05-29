@@ -41,3 +41,10 @@ out/
 
 ### Local env ###
 .env
+
+### Frontend (Vite+) ###
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/*.log
+.direnv/

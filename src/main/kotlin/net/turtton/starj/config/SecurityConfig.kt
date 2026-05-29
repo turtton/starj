@@ -13,6 +13,7 @@ import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.AuthenticationEntryPoint
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler
 import org.springframework.security.web.savedrequest.NullRequestCache
 
 @Configuration
@@ -24,6 +25,7 @@ class SecurityConfig {
         http {
             csrf {
                 csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse()
+                csrfTokenRequestHandler = CsrfTokenRequestAttributeHandler()
             }
             formLogin { disable() }
             httpBasic { disable() }
@@ -35,6 +37,13 @@ class SecurityConfig {
                 authorize("/v3/api-docs/**", permitAll)
                 authorize("/swagger-ui/**", permitAll)
                 authorize("/swagger-ui.html", permitAll)
+                authorize("/", permitAll)
+                authorize("/index.html", permitAll)
+                authorize("/assets/**", permitAll)
+                authorize("/favicon.ico", permitAll)
+                authorize("/vite.svg", permitAll)
+                authorize("/login", permitAll)
+                authorize("/register", permitAll)
                 authorize(anyRequest, authenticated)
             }
             exceptionHandling {

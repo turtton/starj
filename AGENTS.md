@@ -11,6 +11,8 @@ direnv allow   # loads flake via .envrc
 # or: nix develop
 ```
 
+The dev shell provides `jdk17` plus the frontend toolchain: `vp` (Vite+, via the `nix-vite-plus` flake input), `nodejs_24`, and `pnpm`. Nothing needs to be installed globally.
+
 Without direnv, ensure `java -version` reports 17 before running Gradle.
 
 ## Commands
@@ -35,6 +37,30 @@ podman compose up -d mysql                   # MySQL on localhost:3306
 No dedicated lint/format/typecheck tasks — `./gradlew build` is the verification gate.
 
 Gradle wrapper: **9.4.1**. Kotlin **2.2.21**, Spring Boot **4.0.6**.
+
+## Frontend (`frontend/`)
+
+Preact SPA built with **Vite+** (`vp`), routed with **preact-iso**, state via **@preact/signals**, styled with **Tailwind CSS v4**. Served same-origin: the dev server proxies `/api` to the backend; the production build is bundled into the Spring Boot jar.
+
+```bash
+cd frontend
+vp install                                    # install JS deps (pnpm under the hood)
+vp dev                                        # dev server on :5173, proxies /api -> :8080
+vp check                                      # format, lint, type-check
+vp build                                      # production build -> frontend/dist
+```
+
+`vp` comes from the Nix dev shell (no global install). On first use, run `vp env off` once so Vite+ reuses the Nix-managed Node/pnpm instead of downloading its own runtime.
+
+Auth is session/cookie based with CSRF: the app primes the `XSRF-TOKEN` cookie via `GET /api/auth/csrf`, then echoes it in the `X-XSRF-TOKEN` header on mutating requests (the backend uses the plain `CsrfTokenRequestAttributeHandler` so the raw cookie value is accepted).
+
+**Production bundling:** `./gradlew bootJar` (or `bootRun`) runs `buildFrontend` (`vp build`) and copies `frontend/dist` into the jar's `static/`, so Spring serves the SPA at `/`. Client deep links (`/login`, `/register`) are forwarded to `index.html` by `SpaForwardingController`. Skip the frontend build with `-PskipFrontend` (used for backend-only CI without `vp`):
+
+```bash
+./gradlew build -PskipFrontend                # backend only, no vp required
+```
+
+Run Gradle from inside the dev shell so `vp` is on the Gradle daemon's `PATH` (direnv loads it automatically in the project dir). If a daemon was first started outside the shell you may see `A problem occurred starting process 'command 'vp''` — run `./gradlew --stop` and retry inside the shell.
 
 ## Layout
 

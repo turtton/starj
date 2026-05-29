@@ -20,6 +20,26 @@
         "type": "github"
       }
     },
+    "nix-vite-plus": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1779305694,
+        "narHash": "sha256-H33Un8olWep0bXUbsv6m4dkBmagTTXStWdb35vQejzM=",
+        "owner": "ryoppippi",
+        "repo": "nix-vite-plus",
+        "rev": "6de01d4dd8e32bbcf6f267acccd5c547453e5f6f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ryoppippi",
+        "repo": "nix-vite-plus",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1779536132,
@@ -39,6 +59,7 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
+        "nix-vite-plus": "nix-vite-plus",
         "nixpkgs": "nixpkgs",
         "systems": "systems"
       }

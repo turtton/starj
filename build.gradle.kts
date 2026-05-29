@@ -54,6 +54,38 @@ kotlin {
     }
 }
 
+val skipFrontend = project.hasProperty("skipFrontend")
+val frontendDir = layout.projectDirectory.dir("frontend")
+val frontendDist = frontendDir.dir("dist")
+
+val installFrontend by tasks.registering(Exec::class) {
+    description = "Installs frontend dependencies via Vite+ (vp install)."
+    workingDir = frontendDir.asFile
+    commandLine("vp", "install")
+    inputs.file(frontendDir.file("package.json"))
+    inputs.file(frontendDir.file("pnpm-workspace.yaml"))
+    outputs.dir(frontendDir.dir("node_modules"))
+}
+
+val buildFrontend by tasks.registering(Exec::class) {
+    description = "Builds the Preact SPA via Vite+ (vp build) into frontend/dist."
+    dependsOn(installFrontend)
+    workingDir = frontendDir.asFile
+    commandLine("vp", "build")
+    inputs.dir(frontendDir.dir("src"))
+    inputs.file(frontendDir.file("index.html"))
+    inputs.file(frontendDir.file("vite.config.ts"))
+    inputs.file(frontendDir.file("package.json"))
+    outputs.dir(frontendDist)
+}
+
+tasks.named<ProcessResources>("processResources") {
+    if (!skipFrontend) {
+        dependsOn(buildFrontend)
+        from(frontendDist) { into("static") }
+    }
+}
+
 tasks.withType<Test> {
     useJUnitPlatform {
         if (gradle.startParameter.taskRequests.none { request -> request.args.any { it == "--tests" } }) {

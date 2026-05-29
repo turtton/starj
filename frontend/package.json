@@ -1,0 +1,27 @@
+{
+  "name": "starj-frontend",
+  "private": true,
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "vp dev",
+    "build": "vp build",
+    "preview": "vp preview",
+    "check": "vp check"
+  },
+  "dependencies": {
+    "@preact/signals": "^2.9.1",
+    "preact": "^10.29.2",
+    "preact-iso": "^2.12.0"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.5",
+    "@tailwindcss/vite": "^4.3.0",
+    "@voidzero-dev/vite-plus-core": "^0.1.23",
+    "tailwindcss": "^4.3.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.0",
+    "vite-plus": "^0.1.23"
+  },
+  "packageManager": "pnpm@11.4.0"
+}

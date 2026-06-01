@@ -64,6 +64,7 @@ val installFrontend by tasks.registering(Exec::class) {
     commandLine("vp", "install")
     inputs.file(frontendDir.file("package.json"))
     inputs.file(frontendDir.file("pnpm-workspace.yaml"))
+    inputs.file(frontendDir.file("pnpm-lock.yaml"))
     outputs.dir(frontendDir.dir("node_modules"))
 }
 

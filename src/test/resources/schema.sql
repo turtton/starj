@@ -17,4 +17,4 @@ CREATE TABLE IF NOT EXISTS storage_objects (
     CONSTRAINT fk_storage_objects_owner FOREIGN KEY (owner_id) REFERENCES users(id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_storage_objects_owner_id ON storage_objects(owner_id, created_at DESC);
+CREATE INDEX idx_storage_objects_owner_id ON storage_objects(owner_id, created_at DESC);

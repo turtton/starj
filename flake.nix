@@ -63,6 +63,9 @@
             pkgs.nodejs_24
             pkgs.pnpm
             vp
+            pkgs.awscli2
+            pkgs.ssm-session-manager-plugin
+            pkgs.mysql84
           ];
         };
       }

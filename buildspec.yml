@@ -1,0 +1,55 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_REGION: ap-northeast-3
+    IMAGE_REPO_NAME: turtton/starj
+    CONTAINER_NAME: starj
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto17
+
+  pre_build:
+    commands:
+      - set -euo pipefail
+      - echo "Logging in to Amazon ECR..."
+      - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - ECR_REGISTRY=${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+      - IMAGE_URI=${ECR_REGISTRY}/${IMAGE_REPO_NAME}
+      - |
+        if [ -n "${CODEBUILD_RESOLVED_SOURCE_VERSION:-}" ]; then
+          IMAGE_TAG=$(echo "${CODEBUILD_RESOLVED_SOURCE_VERSION}" | cut -c 1-7)
+        else
+          IMAGE_TAG=${CODEBUILD_BUILD_NUMBER:-initial}
+        fi
+      - echo "IMAGE_URI=${IMAGE_URI} IMAGE_TAG=${IMAGE_TAG}"
+      - aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+      - echo "Running backend unit tests (frontend skipped)..."
+      - chmod +x ./gradlew
+      - ./gradlew test -PskipFrontend --no-daemon
+
+  build:
+    commands:
+      - set -euo pipefail
+      - echo "Building Docker image..."
+      - docker build -t "${IMAGE_URI}:${IMAGE_TAG}" -t "${IMAGE_URI}:latest" .
+
+  post_build:
+    commands:
+      - set -euo pipefail
+      - echo "Pushing Docker image..."
+      - docker push "${IMAGE_URI}:${IMAGE_TAG}"
+      - docker push "${IMAGE_URI}:latest"
+      - printf '[{"name":"%s","imageUri":"%s"}]' "${CONTAINER_NAME}" "${IMAGE_URI}:${IMAGE_TAG}" > imagedefinitions.json
+      - cat imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
+
+cache:
+  paths:
+    - /root/.gradle/caches/**/*
+    - /root/.gradle/wrapper/**/*

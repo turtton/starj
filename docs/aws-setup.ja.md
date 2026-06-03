@@ -8,7 +8,7 @@
 | 手順 | 内容 | 状態 |
 | --- | --- | --- |
 | 1 | アプリ用 DB | 未着手 |
-| 2 | Secrets Manager にアプリ設定を登録 | 未着手 |
+| 2 | Secrets Manager（MySQL 認証情報） | **完了**（`prod/starj/mysql`） |
 | 3 | EC2 instance profile（IAM） | 未着手 |
 | 4 | VPC Endpoint 追加 | 未着手（S3 Gateway route は確認済み） |
 | 5 | CodeBuild で ECR に image push | **完了** |
@@ -20,7 +20,7 @@
 ## 方針
 
 - アプリは **private subnet 上の EC2** で **Docker コンテナ**として動かす。
-- 機密値は **Secrets Manager** に置き、起動時は [`scripts/deploy.sh`](../scripts/deploy.sh) が取得して `docker run --env-file` で渡す。
+- **機密値（DB user/pass）のみ** Secrets Manager（`prod/starj/mysql`）に置き、[`scripts/deploy.sh`](../scripts/deploy.sh) が取得して `docker run --env-file` で渡す。Redis / S3 / JDBC URL など非機密の接続先は `application-production.properties` または EC2 ホストの環境変数で渡す。
 - S3 アクセスは **production profile** の instance profile（default credentials chain）で行う。
 - **image の build & push は VPC 外の CodeBuild**（リポジトリ直下の [`buildspec.yml`](../buildspec.yml)）で行う。
 - CodePipeline は、手動デプロイが一度成功してから追加する（`Source → CodeBuild`、デプロイは CodeDeploy または EventBridge + SSM）。
@@ -53,7 +53,7 @@ AWS CLI で `ap-northeast-3` の状態を読み取り専用で確認した時点
 | CodeBuild | プロジェクト作成済み。初回ビルド成功 |
 | CodePipeline | 未作成 |
 | ALB / ACM / Route 53 | 未作成。現時点では不要 |
-| Secrets Manager | RDS 管理 secret のみ確認済み。アプリ用 secret は未作成 |
+| Secrets Manager | RDS 管理 secret あり。**`prod/starj/mysql`**（`username` / `password`）登録済み |
 
 ## デプロイ前に解消する課題
 
@@ -120,32 +120,39 @@ GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, DROP, INDEX, REFERENCES
 FLUSH PRIVILEGES;
 ```
 
-## 手順 2: Secrets Manager にアプリ設定を登録する
+## 手順 2: Secrets Manager（MySQL 認証情報のみ）
 
-Secret 名の例: `starj/app/production`
+**Secret 名:** `prod/starj/mysql`（登録済み）
 
-JSON のキー名は Spring Boot の環境変数名と一致させます（`deploy.sh` がそのまま `--env-file` に展開します）。
+機密値は DB の user / pass のみです。`deploy.sh` は JSON の `username` / `password` を Spring の環境変数にマッピングします。
 
 ```json
 {
-  "SPRING_DATASOURCE_URL": "jdbc:mysql://<aurora-endpoint>:3306/starj",
-  "SPRING_DATASOURCE_USERNAME": "starj_app",
-  "SPRING_DATASOURCE_PASSWORD": "<password>",
-  "REDIS_HOST": "<valkey-endpoint>",
-  "REDIS_PORT": "6379",
-  "STORAGE_S3_REGION": "ap-northeast-3",
-  "STORAGE_S3_BUCKET": "<bucket-name>"
+  "username": "starj_app",
+  "password": "<password>"
 }
 ```
 
-Redis で TLS / auth が必要な場合は、実際の ElastiCache 設定に合わせて次を追加します。
+→ コンテナへ渡す値:
 
 ```text
-SPRING_DATA_REDIS_SSL_ENABLED=true
-SPRING_DATA_REDIS_PASSWORD=<token>
+SPRING_DATASOURCE_USERNAME=<username>
+SPRING_DATASOURCE_PASSWORD=<password>
 ```
 
-`deploy.sh` は常に `SPRING_PROFILES_ACTIVE=production` を付与します。
+**Secrets Manager に入れないもの**（非機密。`application-production.properties` または EC2 ホストの環境変数）:
+
+| 変数 | 例 |
+| --- | --- |
+| `SPRING_DATASOURCE_URL` | `jdbc:mysql://<aurora-endpoint>:3306/starj` |
+| `REDIS_HOST` | Valkey エンドポイント |
+| `REDIS_PORT` | `6379` |
+| `STORAGE_S3_REGION` | `ap-northeast-3` |
+| `STORAGE_S3_BUCKET` | bucket 名 |
+
+Redis で TLS / auth が必要な場合のみ `SPRING_DATA_REDIS_SSL_ENABLED` / `SPRING_DATA_REDIS_PASSWORD` をホスト環境変数に追加します。
+
+`deploy.sh` は常に `SPRING_PROFILES_ACTIVE=production` を付与します。上記の非機密変数は、EC2 上で export してから `./scripts/deploy.sh` を実行すると env ファイルに含まれます。
 
 RDS 管理 secret（`rds!cluster-...`）は参照しません。
 
@@ -235,7 +242,7 @@ RDS 管理 secret（`rds!cluster-...`）は参照しません。
         "secretsmanager:GetSecretValue",
         "secretsmanager:DescribeSecret"
       ],
-      "Resource": "arn:aws:secretsmanager:ap-northeast-3:<ACCOUNT_ID>:secret:starj/app/*"
+      "Resource": "arn:aws:secretsmanager:ap-northeast-3:<ACCOUNT_ID>:secret:prod/starj/*"
     }
   ]
 }
@@ -325,7 +332,7 @@ chmod +x scripts/deploy.sh
 | 変数 | デフォルト |
 | --- | --- |
 | `AWS_REGION` | `ap-northeast-3` |
-| `STARJ_SECRET_ID` | `starj/app/production` |
+| `STARJ_MYSQL_SECRET_ID` | `prod/starj/mysql` |
 | `STARJ_CONTAINER_NAME` | `starj` |
 | `STARJ_IMAGE_REPO` | `turtton/starj` |
 | `STARJ_HOST_PORT` | `8080` |
@@ -333,7 +340,7 @@ chmod +x scripts/deploy.sh
 ### IAM 動作確認（EC2 上）
 
 ```bash
-aws secretsmanager get-secret-value --secret-id starj/app/production --region ap-northeast-3 --query ARN
+aws secretsmanager get-secret-value --secret-id prod/starj/mysql --region ap-northeast-3 --query ARN
 
 aws ecr get-login-password --region ap-northeast-3 | docker login --username AWS --password-stdin \
   $(aws sts get-caller-identity --query Account --output text).dkr.ecr.ap-northeast-3.amazonaws.com
@@ -414,7 +421,7 @@ ALB SG -> EC2 app SG : tcp/8080
 
 - [x] ECR に CodeBuild で image がある
 - [x] CodeBuild が VPC 外・privileged で動作する
-- [ ] Secrets Manager に `starj/app/production` がある
+- [x] Secrets Manager に `prod/starj/mysql` がある
 - [ ] EC2 instance profile に SSM / ECR pull / S3 / Secrets Manager がある
 - [ ] `ecr.api`、`ecr.dkr`、`secretsmanager` endpoint がある
 - [x] private subnet の route table に S3 Gateway ルートがある

@@ -18,7 +18,7 @@ done
 
 IMAGE_TAG="$1"
 REGION="${AWS_REGION:-ap-northeast-3}"
-SECRET_ID="${STARJ_SECRET_ID:-starj/app/production}"
+MYSQL_SECRET_ID="${STARJ_MYSQL_SECRET_ID:-prod/starj/mysql}"
 CONTAINER_NAME="${STARJ_CONTAINER_NAME:-starj}"
 IMAGE_REPO="${STARJ_IMAGE_REPO:-turtton/starj}"
 HOST_PORT="${STARJ_HOST_PORT:-8080}"
@@ -31,27 +31,36 @@ ENV_FILE=$(mktemp)
 chmod 600 "${ENV_FILE}"
 trap 'rm -f "${ENV_FILE}"' EXIT
 
-echo "==> Fetching secrets from ${SECRET_ID}"
-aws secretsmanager get-secret-value \
+echo "==> Fetching MySQL credentials from ${MYSQL_SECRET_ID}"
+MYSQL_JSON=$(aws secretsmanager get-secret-value \
   --region "${REGION}" \
-  --secret-id "${SECRET_ID}" \
+  --secret-id "${MYSQL_SECRET_ID}" \
   --query SecretString \
-  --output text \
-| jq -r 'to_entries[] | "\(.key)=\(.value)"' >> "${ENV_FILE}"
+  --output text)
+{
+  echo "SPRING_DATASOURCE_USERNAME=$(echo "${MYSQL_JSON}" | jq -r .username)"
+  echo "SPRING_DATASOURCE_PASSWORD=$(echo "${MYSQL_JSON}" | jq -r .password)"
+} >> "${ENV_FILE}"
 
 echo "SPRING_PROFILES_ACTIVE=production" >> "${ENV_FILE}"
 
+for var in SPRING_DATASOURCE_URL REDIS_HOST REDIS_PORT STORAGE_S3_REGION STORAGE_S3_BUCKET; do
+  if [ -n "${!var:-}" ]; then
+    echo "${var}=${!var}" >> "${ENV_FILE}"
+  fi
+done
+
 echo "==> Logging in to ECR (${ECR_REGISTRY})"
 aws ecr get-login-password --region "${REGION}" \
-  | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+  | sudo docker login --username AWS --password-stdin "${ECR_REGISTRY}"
 
 echo "==> Pulling ${IMAGE_URI}"
-docker pull "${IMAGE_URI}"
+sudo docker pull "${IMAGE_URI}"
 
 echo "==> Replacing container ${CONTAINER_NAME}"
-docker rm -f "${CONTAINER_NAME}" 2>/dev/null || true
+sudo docker rm -f "${CONTAINER_NAME}" 2>/dev/null || true
 
-docker run -d \
+sudo docker run -d \
   --name "${CONTAINER_NAME}" \
   --restart unless-stopped \
   -p "${HOST_PORT}:8080" \
@@ -68,5 +77,5 @@ for i in $(seq 1 30); do
 done
 
 echo "Health check timed out. Recent logs:" >&2
-docker logs --tail 50 "${CONTAINER_NAME}" >&2 || true
+sudo docker logs --tail 50 "${CONTAINER_NAME}" >&2 || true
 exit 1

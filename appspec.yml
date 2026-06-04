@@ -1,0 +1,10 @@
+version: 0.0
+os: linux
+files:
+  - source: /
+    destination: /opt/starj/deploy
+hooks:
+  AfterInstall:
+    - location: scripts/codedeploy/deploy-from-artifact.sh
+      timeout: 900
+      runas: root
